@@ -29,9 +29,9 @@ public class MessageConsumer {
     }
 
     @KafkaListener(topics = "send_sms", groupId = "varchasv8")
-    public void listen(String message) throws ValidationException {
-        System.out.println("Received message: " + message);
-        SMSRequest currentSms = smsRequestService.getSmsRequestById(Long.parseLong(message));
+    public void listen(String id) throws ValidationException {
+        System.out.println("Received message: " + id);
+        SMSRequest currentSms = smsRequestService.getSmsRequestById(Long.parseLong(id));
         System.out.println(currentSms);
         String phoneNo = currentSms.getPhoneNumber();
         if(blacklistService.isBlacklisted(phoneNo)){
@@ -47,7 +47,7 @@ public class MessageConsumer {
             currentSms.setStatus("SENT");
             smsRequestRepository.save(currentSms);
             System.out.println("the number is not blacklisted");
-            System.out.println("sending sms!!!");
+//            System.out.println("sending sms!!!");
         }
 
 

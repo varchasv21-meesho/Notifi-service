@@ -14,7 +14,7 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 @Configuration
 @EnableElasticsearchRepositories(basePackages = "com.notification.service.v2v.Notifiservice.dao")
 @ComponentScan(basePackages = { "com.notification.service.v2v.Notifiservice.services" })
-public class ElsConfig extends AbstractElasticsearchConfiguration {
+public class ESConfig extends AbstractElasticsearchConfiguration {
 
     @Bean
     @Override

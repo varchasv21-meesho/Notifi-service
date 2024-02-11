@@ -1,6 +1,6 @@
 package com.notification.service.v2v.Notifiservice.exceptionHandling;
 
-public class ValidationException extends Exception{
+public class ValidationException extends RuntimeException{
 
     ErrorResponse errorResponse;
     public ValidationException(String message) {

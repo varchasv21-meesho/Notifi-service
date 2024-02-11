@@ -6,17 +6,13 @@ import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorRespons
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Set;
-
-import static org.apache.http.HttpStatus.*;
 
 @Service
 @Slf4j
@@ -56,7 +52,8 @@ public class BlacklistService {
             // Adding in MySQL
             for (String phoneNumber : phoneNumbers) {
                 Blacklist entity = new Blacklist();
-                entity.setPhoneNumber(phoneNumber);
+                entity.setPhoneNumber(phoneNumber.substring(Math.max(0,phoneNumber.length()-10)));
+//                entity.setPhoneNumber(phoneNumber);
                 blacklistRepository.save(entity);
             }
         } catch (Exception e) {
@@ -88,6 +85,6 @@ public class BlacklistService {
     }
 
     public boolean isBlacklisted(String phoneNumber) {
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember("blacklist", phoneNumber));
+        return redisTemplate.opsForSet().isMember("blacklist", phoneNumber) == Boolean.TRUE;
     }
 }

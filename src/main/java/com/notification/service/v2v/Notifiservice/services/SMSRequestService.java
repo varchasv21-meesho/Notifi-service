@@ -80,11 +80,11 @@ public class SMSRequestService {
     public void deleteSmsRequest(Long id) throws ValidationException{
         if(id<0){
             log.error("wrong request id " + id + ": provided id is negative --- id should be > 0");
-            throw new ValidationException(new ErrorResponse(HttpStatus.SC_BAD_REQUEST, "provide appropriate request id"));
+            throw new ValidationException(new ErrorResponse(400, "provide appropriate request id"));
         }
         if (!smsRequestRepository.existsById(id)) {
             log.error("wrong request id " + id + ": provided id is not found in database");
-            throw new ValidationException( new ErrorResponse(HttpStatus.SC_BAD_REQUEST, "request_id not found in database"));
+            throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
         } else {
             smsRequestRepository.deleteById(id);
         }

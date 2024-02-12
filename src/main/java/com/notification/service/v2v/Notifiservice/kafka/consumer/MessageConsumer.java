@@ -1,7 +1,7 @@
 package com.notification.service.v2v.Notifiservice.kafka.consumer;
 
 import com.notification.service.v2v.Notifiservice.dao.SMSRequestRepository;
-import com.notification.service.v2v.Notifiservice.entity.SMSRequest;
+import com.notification.service.v2v.Notifiservice.entity.SMSRequestEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.services.BlacklistService;
@@ -29,9 +29,9 @@ public class MessageConsumer {
     }
 
     @KafkaListener(topics = "send_sms", groupId = "varchasv8")
-    public void listen(String id) throws ValidationException {
+    public void listen(String id) {
         System.out.println("Received message: " + id);
-        SMSRequest currentSms = smsRequestService.getSmsRequestById(Long.parseLong(id));
+        SMSRequestEntity currentSms = smsRequestService.getSmsRequestById(Long.parseLong(id)).getData();
         System.out.println(currentSms);
         String phoneNo = currentSms.getPhoneNumber();
         if(blacklistService.isBlacklisted(phoneNo)){
@@ -40,7 +40,7 @@ public class MessageConsumer {
             currentSms.setFailureCode("400");
             currentSms.setFailureComments("the number is blacklisted");
             smsRequestRepository.save(currentSms);
-            throw new ValidationException("the number is blacklisted");
+//            throw new ValidationException("the number is blacklisted");
 
         }
         else{

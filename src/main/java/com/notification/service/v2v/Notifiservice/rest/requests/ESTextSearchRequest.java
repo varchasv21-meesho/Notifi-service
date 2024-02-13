@@ -2,17 +2,18 @@ package com.notification.service.v2v.Notifiservice.rest.requests;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.notification.service.v2v.Notifiservice.entity.PageDetails;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ESTextSearchRequest {
     @NotNull("Message should not be null")
-    String text;
-    PageDetails pageDetails;
+    private String text;
+    private PageDetails pageDetails;
 }

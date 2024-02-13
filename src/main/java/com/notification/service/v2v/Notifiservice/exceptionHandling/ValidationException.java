@@ -1,5 +1,8 @@
 package com.notification.service.v2v.Notifiservice.exceptionHandling;
 
+import lombok.Getter;
+
+@Getter
 public class ValidationException extends RuntimeException{
 
     ErrorResponse errorResponse;

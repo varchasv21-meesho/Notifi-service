@@ -14,9 +14,9 @@ public class SMSRequestToESEntityTransformer {
         esEntity.setStatus(smsRequestEntity.getStatus());
         esEntity.setCreatedAt(Timestamp.valueOf(smsRequestEntity.getCreatedAt()).getTime());
         esEntity.setUpdatedAt(Timestamp.valueOf(smsRequestEntity.getUpdatedAt()).getTime());
-        esEntity.setFailureCode("");
-        esEntity.setFailureComment("");
-        System.out.println(esEntity);
+        esEntity.setFailureCode(smsRequestEntity.getFailureCode());
+        esEntity.setFailureComment(smsRequestEntity.getFailureComments());
+//        System.out.println(esEntity);
         return esEntity;
     }
 }

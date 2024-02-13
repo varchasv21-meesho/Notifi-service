@@ -47,7 +47,8 @@ public class BlacklistService {
             throw new ValidationException(new ErrorResponse(400, "invalid formatting of phone numbers"));
         try {
             // Adding into Redis
-            redisTemplate.opsForSet().add("blacklist", phoneNumbers.toArray(new String[0]));
+            String[] phoneNumbersArray = phoneNumbers.toArray(new String[0]);
+            redisTemplate.opsForSet().add("blacklist", phoneNumbersArray);
 
             // Adding in MySQL
             for (String phoneNumber : phoneNumbers) {

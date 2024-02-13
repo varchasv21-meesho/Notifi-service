@@ -1,7 +1,7 @@
 package com.notification.service.v2v.Notifiservice.services;
 
 import com.notification.service.v2v.Notifiservice.dao.BlacklistRepository;
-import com.notification.service.v2v.Notifiservice.entity.Blacklist;
+import com.notification.service.v2v.Notifiservice.entity.BlacklistEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
@@ -47,11 +47,12 @@ public class BlacklistService {
             throw new ValidationException(new ErrorResponse(400, "invalid formatting of phone numbers"));
         try {
             // Adding into Redis
-            redisTemplate.opsForSet().add("blacklist", phoneNumbers.toArray(new String[0]));
+            String[] phoneNumbersArray = phoneNumbers.toArray(new String[0]);
+            redisTemplate.opsForSet().add("blacklist", phoneNumbersArray);
 
             // Adding in MySQL
             for (String phoneNumber : phoneNumbers) {
-                Blacklist entity = new Blacklist();
+                BlacklistEntity entity = new BlacklistEntity();
                 entity.setPhoneNumber(phoneNumber.substring(Math.max(0,phoneNumber.length()-10)));
 //                entity.setPhoneNumber(phoneNumber);
                 blacklistRepository.save(entity);

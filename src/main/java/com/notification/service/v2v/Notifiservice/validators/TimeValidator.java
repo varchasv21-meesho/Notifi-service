@@ -4,6 +4,6 @@ import com.notification.service.v2v.Notifiservice.rest.requests.ESTimeRangeReque
 
 public class TimeValidator {
     public static boolean checkTimings(ESTimeRangeRequest esTimeRangeRequest){
-        return esTimeRangeRequest.getEndTime().isAfter(esTimeRangeRequest.getStartTime());
+        return !esTimeRangeRequest.getEndTime().isAfter(esTimeRangeRequest.getStartTime());
     }
 }

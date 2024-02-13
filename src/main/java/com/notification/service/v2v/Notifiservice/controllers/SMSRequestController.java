@@ -1,18 +1,19 @@
 package com.notification.service.v2v.Notifiservice.controllers;
 
-import com.notification.service.v2v.Notifiservice.entity.SMSRequest;
+import com.notification.service.v2v.Notifiservice.entity.PageDetails;
+import com.notification.service.v2v.Notifiservice.entity.SMSRequestEntity;
 //import com.notification.service.v2v.Notifiservice.kafka.producer.MessageProducer;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
+import com.notification.service.v2v.Notifiservice.rest.responses.CustomResponse;
+import com.notification.service.v2v.Notifiservice.rest.responses.SMSResponse;
 import com.notification.service.v2v.Notifiservice.services.SMSRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("v1/sms")
@@ -25,49 +26,26 @@ public class SMSRequestController {
     @Autowired
     SMSRequestController(SMSRequestService smsRequestService1){
         smsRequestService = smsRequestService1;
-//        this.messageProducer = messageProducer;
     }
 
     @GetMapping
-    public List<SMSRequest> getAllSmsRequests() {
+    public CustomResponse<List<SMSRequestEntity>,String, PageDetails> getAllSmsRequests() {
         return smsRequestService.getAllSMSRequests();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getSmsRequestById(@PathVariable Long id) throws ValidationException {
-        SMSRequest smsRequest = smsRequestService.getSmsRequestById(id);
-
-        if (smsRequest == null) {
-            throw new ValidationException("request_id not found");
-        }
-        // Request ID found, return success response
-        return ResponseEntity.ok(smsRequest);
+    public CustomResponse<SMSRequestEntity, String, PageDetails> getSmsRequestById(@PathVariable Long id) throws ValidationException {
+        return smsRequestService.getSmsRequestById(id);
     }
 
     @PostMapping("/send")
-    public ResponseEntity<Map<String, Object>> sendSMS(@RequestBody SMSRequest smsRequest) throws ValidationException {
-        if(smsRequest.getPhoneNumber()==null) {
-            System.out.println("The number is " + null);
-            throw new ValidationException("Phone number is mandatory");
-        }
-
-        SMSRequest newSms = smsRequestService.addSmsRequest(smsRequest);
-
-
-
-//        messageProducer.sendMessage("send_sms",String.valueOf(newSms.getId()));
-
-        Map<String, Object> successResponse = new HashMap<>();
-        Map<String, Object> responseData = new HashMap<>();
-        responseData.put("requestId", newSms.getId());
-        responseData.put("comments", "Successfully Sent");
-        successResponse.put("data", responseData);
-        return ResponseEntity.ok(successResponse);
+    public CustomResponse<SMSResponse,String,PageDetails> sendSMS(@RequestBody SMSRequestEntity smsRequestEntity) throws ValidationException {
+        return smsRequestService.addSmsRequest(smsRequestEntity);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteSmsRequest(@PathVariable Long id) throws ValidationException {
-        smsRequestService.deleteSmsRequest(id);
+    public CustomResponse<SMSRequestEntity, String, PageDetails> deleteSmsRequest(@PathVariable Long id) throws ValidationException {
+        return smsRequestService.deleteSmsRequest(id);
     }
 
 

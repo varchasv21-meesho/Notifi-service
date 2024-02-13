@@ -14,13 +14,9 @@ import java.time.LocalDateTime;
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ESTimeRangeRequest {
-    @NotBlank(message = "phoneNumber must not be blank")
     private String phoneNumber;
-    @NotBlank(message = "startTime must not be blank")
     private LocalDateTime startTime;
-    @NotBlank(message = "endTime must not be blank")
     private LocalDateTime endTime;
-    @NotBlank(message = "pageDetails must not be blank")
     private PageDetails pageDetails;
 
 

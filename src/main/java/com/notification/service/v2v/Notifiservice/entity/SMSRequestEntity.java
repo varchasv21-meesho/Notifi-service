@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Entity
-public class SMSRequest {
+public class SMSRequestEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,11 +21,11 @@ public class SMSRequest {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public SMSRequest() {
+    public SMSRequestEntity() {
     }
 
     // Constructor with parameters
-    public SMSRequest(String phoneNumber, String message, String status, String failureCode, String failureComments) {
+    public SMSRequestEntity(String phoneNumber, String message, String status, String failureCode, String failureComments) {
         this.phoneNumber = phoneNumber;
         this.message = message;
         this.status = status;
@@ -33,7 +33,7 @@ public class SMSRequest {
         this.failureComments = failureComments;
     }
 
-    public SMSRequest(String phoneNumber, String message) {
+    public SMSRequestEntity(String phoneNumber, String message) {
         this.phoneNumber = phoneNumber;
         this.message = message;
     }

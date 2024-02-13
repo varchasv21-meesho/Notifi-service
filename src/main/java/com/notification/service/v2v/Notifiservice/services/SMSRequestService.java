@@ -1,13 +1,15 @@
 package com.notification.service.v2v.Notifiservice.services;
 
 import com.notification.service.v2v.Notifiservice.dao.SMSRequestRepository;
-import com.notification.service.v2v.Notifiservice.entity.SMSRequest;
+import com.notification.service.v2v.Notifiservice.entity.PageDetails;
+import com.notification.service.v2v.Notifiservice.entity.SMSRequestEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.kafka.producer.MessageProducer;
+import com.notification.service.v2v.Notifiservice.rest.responses.CustomResponse;
+import com.notification.service.v2v.Notifiservice.rest.responses.SMSResponse;
 import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,22 +20,25 @@ import java.util.Optional;
 @Slf4j
 public class SMSRequestService {
     private final SMSRequestRepository smsRequestRepository;
-
+    private final BlacklistService blacklistService;
     final MessageProducer messageProducer;
 
-    public SMSRequestService(SMSRequestRepository smsRequestRepository, MessageProducer messageProducer) {
+    public SMSRequestService(SMSRequestRepository smsRequestRepository, BlacklistService blacklistService, MessageProducer messageProducer) {
         this.smsRequestRepository = smsRequestRepository;
+        this.blacklistService = blacklistService;
         this.messageProducer = messageProducer;
     }
 
-    public List<SMSRequest> getAllSMSRequests() { return smsRequestRepository.findAll();}
+    public CustomResponse<List<SMSRequestEntity>,String,PageDetails> getAllSMSRequests() {
+        return new CustomResponse<>(smsRequestRepository.findAll(),null,null);
+    }
 
-    public SMSRequest getSmsRequestById(Long id) throws ValidationException{
+    public CustomResponse<SMSRequestEntity,String, PageDetails> getSmsRequestById(Long id) throws ValidationException{
         if(id<0){
             log.error("wrong request id " + id + ": provided id is negative --- id should be > 0");
             throw new ValidationException(new ErrorResponse(400, "provide appropriate request id"));
         }
-        Optional<SMSRequest> result;
+        Optional<SMSRequestEntity> result;
         try{
             result = smsRequestRepository.findById(id);
         }
@@ -42,51 +47,66 @@ public class SMSRequestService {
             throw new ValidationException("SMSRequestRepository gave error while searching for id " + id + ": check mysql database errors");
         }
         if(result.isPresent()){
-            return result.get();
+            return new CustomResponse<>(result.get(),null,null);
         }else {
             log.error("wrong request id " + id + ": provided id is not found in database");
             throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
         }
     }
 
-    public SMSRequest addSmsRequest(SMSRequest smsRequest) throws ValidationException{
-        if(SmsRequestValidator.isInvalidPhoneNumber(smsRequest.getPhoneNumber())){
+    public CustomResponse<SMSRequestEntity,String,PageDetails> deleteSmsRequest(Long id) throws ValidationException{
+        if(id<0){
+            log.error("wrong request id " + id + ": provided id is negative --- id should be > 0");
+            throw new ValidationException(new ErrorResponse(400, "provide appropriate request id"));
+        }
+        SMSRequestEntity result;
+        if (!smsRequestRepository.existsById(id)) {
+            log.error("wrong request id " + id + ": provided id is not found in database");
+            throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
+        } else {
+            result = smsRequestRepository.findById(id).orElse(null);
+            smsRequestRepository.deleteById(id);
+            return new CustomResponse<>(result,null,null);
+        }
+    }
+
+    public SMSRequestEntity setDetails(SMSRequestEntity smsRequestEntity){
+        if(blacklistService.isBlacklisted(smsRequestEntity.getPhoneNumber())){
+            smsRequestEntity.setStatus("BAD_REQUEST");
+            smsRequestEntity.setFailureCode("400");
+            smsRequestEntity.setFailureComments("the number is blacklisted");
+        }
+        else smsRequestEntity.setStatus("Pending");
+
+        smsRequestEntity.setCreatedAt(LocalDateTime.now());
+        smsRequestEntity.setUpdatedAt(LocalDateTime.now());
+
+        String s = smsRequestEntity.getPhoneNumber();
+        smsRequestEntity.setPhoneNumber(s.substring(Math.max(0,s.length()-10)));
+
+        return smsRequestEntity;
+    }
+
+    public CustomResponse<SMSResponse,String, PageDetails> addSmsRequest(SMSRequestEntity smsRequestEntity) throws ValidationException{
+        if(SmsRequestValidator.isInvalidPhoneNumber(smsRequestEntity.getPhoneNumber())){
             log.error("wrong input format : phone_number validation failed");
             throw new ValidationException(new ErrorResponse(400, "please check phone number"));
         }
-        SMSRequest savedSmsRequest;
-        smsRequest.setStatus("PENDING");
-        smsRequest.setCreatedAt(LocalDateTime.now());
-        smsRequest.setUpdatedAt(LocalDateTime.now());
-        String s = smsRequest.getPhoneNumber();
-        smsRequest.setPhoneNumber(s.substring(Math.max(0,s.length()-10)));
+        SMSRequestEntity savedSmsRequestEntity;
         try {
-            savedSmsRequest = smsRequestRepository.save(smsRequest);
+            savedSmsRequestEntity = smsRequestRepository.save(setDetails(smsRequestEntity));
         }
         catch (Exception e) {
             log.debug("smsRequestRepository gave error while creating new record: check mysql database errors");
             throw new ValidationException("smsRequestRepository gave error while creating new record: check mysql database errors");
         }
         try{
-            messageProducer.sendMessage("send_sms",String.valueOf(savedSmsRequest.getId()));
+            messageProducer.sendMessage("send_sms",String.valueOf(savedSmsRequestEntity.getId()));
         }catch (Exception e){
             log.debug("messageProducer cant produce messageId: check for kafka");
             throw new ValidationException("messageProducer cant produce Id for the message : check for kafka");
         }
 
-        return savedSmsRequest;
-    }
-
-    public void deleteSmsRequest(Long id) throws ValidationException{
-        if(id<0){
-            log.error("wrong request id " + id + ": provided id is negative --- id should be > 0");
-            throw new ValidationException(new ErrorResponse(400, "provide appropriate request id"));
-        }
-        if (!smsRequestRepository.existsById(id)) {
-            log.error("wrong request id " + id + ": provided id is not found in database");
-            throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
-        } else {
-            smsRequestRepository.deleteById(id);
-        }
+        return new CustomResponse<>(new SMSResponse(savedSmsRequestEntity.getId(), "Pending"),null,null);
     }
 }

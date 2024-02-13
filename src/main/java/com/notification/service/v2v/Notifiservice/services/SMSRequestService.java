@@ -20,11 +20,12 @@ import java.util.Optional;
 @Slf4j
 public class SMSRequestService {
     private final SMSRequestRepository smsRequestRepository;
-
+    private final BlacklistService blacklistService;
     final MessageProducer messageProducer;
 
-    public SMSRequestService(SMSRequestRepository smsRequestRepository, MessageProducer messageProducer) {
+    public SMSRequestService(SMSRequestRepository smsRequestRepository, BlacklistService blacklistService, MessageProducer messageProducer) {
         this.smsRequestRepository = smsRequestRepository;
+        this.blacklistService = blacklistService;
         this.messageProducer = messageProducer;
     }
 
@@ -70,9 +71,16 @@ public class SMSRequestService {
     }
 
     public SMSRequestEntity setDetails(SMSRequestEntity smsRequestEntity){
-        smsRequestEntity.setStatus("PENDING");
+        if(blacklistService.isBlacklisted(smsRequestEntity.getPhoneNumber())){
+            smsRequestEntity.setStatus("BAD_REQUEST");
+            smsRequestEntity.setFailureCode("400");
+            smsRequestEntity.setFailureComments("the number is blacklisted");
+        }
+        else smsRequestEntity.setStatus("Pending");
+
         smsRequestEntity.setCreatedAt(LocalDateTime.now());
         smsRequestEntity.setUpdatedAt(LocalDateTime.now());
+
         String s = smsRequestEntity.getPhoneNumber();
         smsRequestEntity.setPhoneNumber(s.substring(Math.max(0,s.length()-10)));
 

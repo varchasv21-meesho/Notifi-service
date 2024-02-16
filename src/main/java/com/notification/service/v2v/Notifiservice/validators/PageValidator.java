@@ -1,6 +1,6 @@
 package com.notification.service.v2v.Notifiservice.validators;
 
-import com.notification.service.v2v.Notifiservice.entity.PageDetails;
+import com.notification.service.v2v.Notifiservice.data.entity.PageDetails;
 
 public class PageValidator {
     public static boolean checkPages(PageDetails pageDetails){

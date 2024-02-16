@@ -1,11 +1,11 @@
 package com.notification.service.v2v.Notifiservice.kafka.consumer;
 
-import com.notification.service.v2v.Notifiservice.dao.SMSRequestRepository;
-import com.notification.service.v2v.Notifiservice.entity.SMSRequestEntity;
+import com.notification.service.v2v.Notifiservice.db.mysql.repository.SMSRepository;
+import com.notification.service.v2v.Notifiservice.data.entity.SmsEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.services.BlacklistService;
-import com.notification.service.v2v.Notifiservice.services.SMSRequestService;
+import com.notification.service.v2v.Notifiservice.services.SmsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,23 +15,23 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @Component
 public class MessageConsumer {
-    private final SMSRequestService smsRequestService;
+    private final SmsService smsService;
 
     private final BlacklistService blacklistService;
 
-    private final SMSRequestRepository smsRequestRepository;
+    private final SMSRepository smsRepository;
 
     @Autowired
-    public MessageConsumer(BlacklistService blacklistService, SMSRequestService smsRequestService, SMSRequestRepository smsRequestRepository) {
+    public MessageConsumer(BlacklistService blacklistService, SmsService smsService, SMSRepository smsRepository) {
         this.blacklistService = blacklistService;
-        this.smsRequestService = smsRequestService;
-        this.smsRequestRepository = smsRequestRepository;
+        this.smsService = smsService;
+        this.smsRepository = smsRepository;
     }
 
     @KafkaListener(topics = "send_sms", groupId = "varchasv8")
     public void listen(String id) {
         System.out.println("Received message: " + id);
-        SMSRequestEntity currentSms = smsRequestService.getSmsRequestById(Long.parseLong(id)).getData();
+        SmsEntity currentSms = smsService.getSmsRequestById(Long.parseLong(id)).getData();
         System.out.println(currentSms);
         String phoneNo = currentSms.getPhoneNumber();
         if(blacklistService.isBlacklisted(phoneNo)){
@@ -39,13 +39,13 @@ public class MessageConsumer {
             currentSms.setStatus("BAD_REQUEST");
             currentSms.setFailureCode("400");
             currentSms.setFailureComments("the number is blacklisted");
-            smsRequestRepository.save(currentSms);
+            smsRepository.save(currentSms);
 //            throw new ValidationException("the number is blacklisted");
 
         }
         else{
             currentSms.setStatus("SENT");
-            smsRequestRepository.save(currentSms);
+            smsRepository.save(currentSms);
             System.out.println("the number is not blacklisted");
 //            System.out.println("sending sms!!!");
         }

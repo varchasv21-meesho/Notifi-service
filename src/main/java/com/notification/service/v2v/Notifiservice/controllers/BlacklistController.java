@@ -1,7 +1,7 @@
 package com.notification.service.v2v.Notifiservice.controllers;
 
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
-import com.notification.service.v2v.Notifiservice.rest.requests.BlacklistRequest;
+import com.notification.service.v2v.Notifiservice.data.requests.BlacklistRequest;
 import com.notification.service.v2v.Notifiservice.services.BlacklistService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

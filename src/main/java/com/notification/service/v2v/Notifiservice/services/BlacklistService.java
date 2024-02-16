@@ -1,7 +1,8 @@
 package com.notification.service.v2v.Notifiservice.services;
 
-import com.notification.service.v2v.Notifiservice.dao.BlacklistRepository;
-import com.notification.service.v2v.Notifiservice.entity.BlacklistEntity;
+import com.notification.service.v2v.Notifiservice.db.mysql.dao.BlacklistDao;
+import com.notification.service.v2v.Notifiservice.db.mysql.repository.BlacklistRepository;
+import com.notification.service.v2v.Notifiservice.data.entity.BlacklistEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
@@ -18,13 +19,13 @@ import java.util.Set;
 @Slf4j
 public class BlacklistService {
 
-    private final BlacklistRepository blacklistRepository;
+    private final BlacklistDao blacklistDao;
 
     private final RedisTemplate<String, String> redisTemplate;
 
     @Autowired
-    public BlacklistService(BlacklistRepository blacklistRepository, RedisTemplate<String, String> redisTemplate){
-        this.blacklistRepository = blacklistRepository;
+    public BlacklistService(BlacklistDao blacklistDao, RedisTemplate<String, String> redisTemplate){
+        this.blacklistDao = blacklistDao;
         this.redisTemplate = redisTemplate;
     }
 
@@ -55,7 +56,7 @@ public class BlacklistService {
                 BlacklistEntity entity = new BlacklistEntity();
                 entity.setPhoneNumber(phoneNumber.substring(Math.max(0,phoneNumber.length()-10)));
 //                entity.setPhoneNumber(phoneNumber);
-                blacklistRepository.save(entity);
+                blacklistDao.save(entity);
             }
         } catch (Exception e) {
             log.debug("Redis threw error: opsForSet() function");
@@ -74,7 +75,7 @@ public class BlacklistService {
 
             // Remove from MySQL
             for(String phoneNumber : phoneNumbers){
-                blacklistRepository.deleteByPhoneNumber(phoneNumber);
+                blacklistDao.deleteByPhoneNumber(phoneNumber);
             }
         }
         catch (Exception e) {

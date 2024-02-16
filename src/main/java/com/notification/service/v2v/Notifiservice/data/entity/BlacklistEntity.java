@@ -1,4 +1,4 @@
-package com.notification.service.v2v.Notifiservice.entity;
+package com.notification.service.v2v.Notifiservice.data.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

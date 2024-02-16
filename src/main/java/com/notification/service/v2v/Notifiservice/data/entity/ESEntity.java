@@ -1,4 +1,4 @@
-package com.notification.service.v2v.Notifiservice.entity;
+package com.notification.service.v2v.Notifiservice.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.Id;

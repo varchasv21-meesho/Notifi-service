@@ -1,4 +1,4 @@
-package com.notification.service.v2v.Notifiservice.kafka.consumer;
+package com.notification.service.v2v.Notifiservice.config.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.protocol.types.Field;

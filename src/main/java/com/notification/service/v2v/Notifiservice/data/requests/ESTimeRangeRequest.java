@@ -1,8 +1,7 @@
-package com.notification.service.v2v.Notifiservice.rest.requests;
+package com.notification.service.v2v.Notifiservice.data.requests;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.notification.service.v2v.Notifiservice.entity.PageDetails;
-import jakarta.validation.constraints.NotBlank;
+import com.notification.service.v2v.Notifiservice.data.entity.PageDetails;
 import lombok.*;
 
 import java.time.LocalDateTime;

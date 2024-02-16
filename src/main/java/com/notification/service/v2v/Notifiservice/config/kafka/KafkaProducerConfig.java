@@ -1,4 +1,4 @@
-package com.notification.service.v2v.Notifiservice.kafka.producer;
+package com.notification.service.v2v.Notifiservice.config.kafka;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;

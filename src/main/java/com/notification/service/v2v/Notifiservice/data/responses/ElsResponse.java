@@ -1,6 +1,6 @@
-package com.notification.service.v2v.Notifiservice.rest.responses;
+package com.notification.service.v2v.Notifiservice.data.responses;
 
-import com.notification.service.v2v.Notifiservice.entity.ESEntity;
+import com.notification.service.v2v.Notifiservice.data.entity.ESEntity;
 import lombok.Setter;
 
 import java.util.List;

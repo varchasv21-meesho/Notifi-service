@@ -1,4 +1,4 @@
-package com.notification.service.v2v.Notifiservice.rest.responses;
+package com.notification.service.v2v.Notifiservice.data.responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

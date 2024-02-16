@@ -1,19 +1,15 @@
-package com.notification.service.v2v.Notifiservice.servicestest;
+package com.notification.service.v2v.Notifiservice.services;
 
-import com.notification.service.v2v.Notifiservice.dao.ESRepository;
-import com.notification.service.v2v.Notifiservice.dao.SMSRequestRepository;
-import com.notification.service.v2v.Notifiservice.entity.ESEntity;
-import com.notification.service.v2v.Notifiservice.entity.PageDetails;
-import com.notification.service.v2v.Notifiservice.entity.SMSRequestEntity;
+import com.notification.service.v2v.Notifiservice.db.elasticsearch.repository.ESRepository;
+import com.notification.service.v2v.Notifiservice.db.mysql.repository.SMSRepository;
+import com.notification.service.v2v.Notifiservice.data.entity.ESEntity;
+import com.notification.service.v2v.Notifiservice.data.entity.PageDetails;
+import com.notification.service.v2v.Notifiservice.data.entity.SmsEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
-import com.notification.service.v2v.Notifiservice.rest.requests.ESTextSearchRequest;
-import com.notification.service.v2v.Notifiservice.rest.requests.ESTimeRangeRequest;
-import com.notification.service.v2v.Notifiservice.rest.responses.CustomResponse;
-import com.notification.service.v2v.Notifiservice.services.ESService;
-import com.notification.service.v2v.Notifiservice.services.SMSRequestService;
+import com.notification.service.v2v.Notifiservice.data.requests.ESTextSearchRequest;
+import com.notification.service.v2v.Notifiservice.data.requests.ESTimeRangeRequest;
+import com.notification.service.v2v.Notifiservice.data.responses.CustomResponse;
 import com.notification.service.v2v.Notifiservice.validators.PageValidator;
-import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
-import com.notification.service.v2v.Notifiservice.validators.TimeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,38 +31,35 @@ public class ESServiceTests {
     private ESRepository esRepository;
 
     @Mock
-    private SMSRequestRepository smsRequestRepository;
-
-    @Mock
-    private SMSRequestService smsRequestService;
+    private SMSRepository smsRepository;
 
     @InjectMocks
-    private ESService esService;
+    private SmsService smsService;
 
     @Test
     public void testSaveValidPhoneNumber() throws ValidationException {
-        SMSRequestEntity validEntity = new SMSRequestEntity();
+        SmsEntity validEntity = new SmsEntity();
         validEntity.setPhoneNumber("9234567890");
         validEntity.setCreatedAt(LocalDateTime.now());
         validEntity.setUpdatedAt(LocalDateTime.now());
 
-        when(smsRequestRepository.save(any())).thenReturn(validEntity);
-        when(smsRequestService.setDetails(any())).thenReturn(validEntity);
+        when(smsRepository.save(any())).thenReturn(validEntity);
+        when(smsService.setDetails(any())).thenReturn(validEntity);
 
-        assertDoesNotThrow(() -> esService.save(validEntity));
+        assertDoesNotThrow(() -> smsService.addSms(validEntity));
 
         verify(esRepository, times(1)).save(any(ESEntity.class));
     }
 
     @Test
     public void testSaveInvalidPhoneNumber() {
-        SMSRequestEntity invalidEntity = new SMSRequestEntity();
+        SmsEntity invalidEntity = new SmsEntity();
         invalidEntity.setPhoneNumber("invalid");
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> esService.save(invalidEntity));
+        ValidationException exception = assertThrows(ValidationException.class, () -> smsService.addSms(invalidEntity));
         assertEquals("Please enter valid phone number", exception.getMessage());
 
-        verify(smsRequestRepository, never()).save(any());
+        verify(smsRepository, never()).save(any());
         verify(esRepository, never()).save(any());
     }
 
@@ -84,7 +76,7 @@ public class ESServiceTests {
 
         when(esRepository.findByPhoneNumberAndCreatedAtBetween(anyString(), anyLong(), anyLong(), any())).thenReturn(page);
 
-        CustomResponse<List<ESEntity>, String, PageDetails> response = esService.findByPhoneNumberAndTimeRange(request);
+        CustomResponse<List<ESEntity>, String, PageDetails> response = smsService.findByPhoneNumberAndTimeRange(request);
 
         assertNotNull(response);
         assertEquals(entities, response.getData());
@@ -104,7 +96,7 @@ public class ESServiceTests {
         when(PageValidator.checkPages(any())).thenReturn(false);
         when(esRepository.findByMessageContaining(anyString(), any())).thenReturn(page);
 
-        CustomResponse<List<ESEntity>, String, PageDetails> response = esService.findByMessage(request);
+        CustomResponse<List<ESEntity>, String, PageDetails> response = smsService.findByMessage(request);
 
         assertNotNull(response);
         assertEquals(entities, response.getData());
@@ -122,7 +114,7 @@ public class ESServiceTests {
 //        when(PageValidator.checkPages(any())).thenReturn(false);
         when(esRepository.findAll((Pageable) any())).thenReturn(page);
 
-        CustomResponse<List<ESEntity>, String, PageDetails> response = esService.findAll(pageDetails);
+        CustomResponse<List<ESEntity>, String, PageDetails> response = smsService.findAll(pageDetails);
 
         assertNotNull(response);
         assertEquals(entities, response.getData());

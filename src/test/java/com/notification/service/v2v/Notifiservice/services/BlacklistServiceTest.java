@@ -1,9 +1,9 @@
-package com.notification.service.v2v.Notifiservice.servicestest;
+package com.notification.service.v2v.Notifiservice.services;
 
-import com.notification.service.v2v.Notifiservice.dao.BlacklistRepository;
-import com.notification.service.v2v.Notifiservice.entity.BlacklistEntity;
+import com.notification.service.v2v.Notifiservice.db.mysql.dao.BlacklistDao;
+import com.notification.service.v2v.Notifiservice.db.mysql.repository.BlacklistRepository;
+import com.notification.service.v2v.Notifiservice.data.entity.BlacklistEntity;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
-import com.notification.service.v2v.Notifiservice.services.BlacklistService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 public class BlacklistServiceTest {
 
     @Mock
-    private BlacklistRepository blacklistRepository;
+    private BlacklistDao blacklistDao;
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
@@ -44,7 +44,7 @@ public class BlacklistServiceTest {
         assertDoesNotThrow(() -> blacklistService.addToBlacklist(phoneNumbers));
 
         verify(setOperations, times(1)).add(eq("blacklist"), any(String.class));
-        verify(blacklistRepository, times(2)).save(any(BlacklistEntity.class));
+        verify(blacklistDao, times(2)).save(any(BlacklistEntity.class));
         verify(redisTemplate, times(1)).opsForSet();
         verifyNoMoreInteractions(redisTemplate);
     }
@@ -58,7 +58,7 @@ public class BlacklistServiceTest {
         assertThrows(ValidationException.class, () -> blacklistService.addToBlacklist(phoneNumbers));
 
         verify(redisTemplate, never()).opsForSet();
-        verify(blacklistRepository, never()).save(any(BlacklistEntity.class));
+        verify(blacklistDao, never()).save(any(BlacklistEntity.class));
     }
 
     @Test
@@ -68,7 +68,7 @@ public class BlacklistServiceTest {
         assertThrows(ValidationException.class,() -> blacklistService.addToBlacklist(phoneNumbers));
 
         verify(redisTemplate, never()).opsForSet();
-        verify(blacklistRepository, never()).save(any(BlacklistEntity.class));
+        verify(blacklistDao, never()).save(any(BlacklistEntity.class));
     }
 
     @Test
@@ -82,7 +82,7 @@ public class BlacklistServiceTest {
         assertDoesNotThrow(() -> blacklistService.removeFromBlacklist(phoneNumbers));
 
         verify(setOperations, times(1)).remove(eq("blacklist"), any(String.class));
-        verify(blacklistRepository, times(2)).deleteByPhoneNumber(anyString());
+        verify(blacklistDao, times(2)).deleteByPhoneNumber(anyString());
         verify(redisTemplate, times(1)).opsForSet();
         verifyNoMoreInteractions(redisTemplate);
     }
@@ -94,7 +94,7 @@ public class BlacklistServiceTest {
         assertThrows(ValidationException.class,() -> blacklistService.removeFromBlacklist(phoneNumbers));
 
         verify(redisTemplate, never()).opsForSet();
-        verify(blacklistRepository, never()).deleteByPhoneNumber(anyString());
+        verify(blacklistDao, never()).deleteByPhoneNumber(anyString());
     }
 
     @Test

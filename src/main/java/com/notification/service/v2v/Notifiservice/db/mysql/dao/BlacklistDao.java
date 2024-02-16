@@ -10,8 +10,8 @@ public class BlacklistDao {
     @Autowired
     private BlacklistRepository blacklistRepository;
 
-    public BlacklistEntity save(BlacklistEntity blacklistEntity){
-        return blacklistRepository.save(blacklistEntity);
+    public void save(BlacklistEntity blacklistEntity){
+        blacklistRepository.save(blacklistEntity);
     }
 
     public void deleteByPhoneNumber(String phoneNumber){

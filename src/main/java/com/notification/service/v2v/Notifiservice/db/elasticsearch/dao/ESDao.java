@@ -18,8 +18,8 @@ public class ESDao {
         this.esRepository = esRepository;
     }
 
-    public ESEntity save(ESEntity esEntity){
-        return esRepository.save(esEntity);
+    public void save(ESEntity esEntity){
+        esRepository.save(esEntity);
     }
 
     public Page<ESEntity> findByPhoneNumberAndCreatedAtBetween(String phoneNumber, Long startTime, Long endTime, Pageable pageable){

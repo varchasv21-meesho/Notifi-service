@@ -1,25 +1,24 @@
 package com.notification.service.v2v.Notifiservice.services;
 
 import com.notification.service.v2v.Notifiservice.data.entity.ESEntity;
-import com.notification.service.v2v.Notifiservice.data.requests.ESTextSearchRequest;
-import com.notification.service.v2v.Notifiservice.data.requests.ESTimeRangeRequest;
-import com.notification.service.v2v.Notifiservice.db.elasticsearch.dao.ESDao;
-import com.notification.service.v2v.Notifiservice.db.mysql.dao.SMSDao;
 import com.notification.service.v2v.Notifiservice.data.entity.PageDetails;
 import com.notification.service.v2v.Notifiservice.data.entity.SmsEntity;
+import com.notification.service.v2v.Notifiservice.data.requests.ESTextSearchRequest;
+import com.notification.service.v2v.Notifiservice.data.requests.ESTimeRangeRequest;
+import com.notification.service.v2v.Notifiservice.data.responses.CustomResponse;
+import com.notification.service.v2v.Notifiservice.data.responses.SMSResponse;
+import com.notification.service.v2v.Notifiservice.db.elasticsearch.dao.ESDao;
+import com.notification.service.v2v.Notifiservice.db.mysql.dao.SMSDao;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ErrorResponse;
 import com.notification.service.v2v.Notifiservice.exceptionHandling.ValidationException;
 import com.notification.service.v2v.Notifiservice.kafka.producer.MessageProducer;
-import com.notification.service.v2v.Notifiservice.data.responses.CustomResponse;
-import com.notification.service.v2v.Notifiservice.services.BlacklistService;
-import com.notification.service.v2v.Notifiservice.data.responses.SMSResponse;
 import com.notification.service.v2v.Notifiservice.transformer.SMSRequestToESEntityTransformer;
 import com.notification.service.v2v.Notifiservice.validators.PageValidator;
 import com.notification.service.v2v.Notifiservice.validators.SmsRequestValidator;
 import com.notification.service.v2v.Notifiservice.validators.TimeValidator;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -36,6 +35,9 @@ public class SmsService {
     private final ESDao esDao;
     private final BlacklistService blacklistService;
     final MessageProducer messageProducer;
+
+    @Value("${spring.kafka.topic}")
+    private String kafkaTopic;
 
     @Autowired
     public SmsService(SMSDao smsDao, ESDao esDao, BlacklistService blacklistService, MessageProducer messageProducer) {
@@ -59,14 +61,14 @@ public class SmsService {
             result = smsDao.findById(id);
         }
         catch (Exception e){
-            log.debug("smsRepository gave error while searching for id " + id + ": check mysql database errors");
-            throw new ValidationException("SMSRequestRepository gave error while searching for id " + id + ": check mysql database errors");
+            log.debug("smsDao gave error while searching for id " + id + ": check mysql database errors");
+            throw new RuntimeException("SMSDao gave error while searching for id " + id + ": check mysql database errors");
         }
         if(result.isPresent()){
             return new CustomResponse<>(result.get(),null,null);
         }else {
             log.error("wrong request id " + id + ": provided id is not found in database");
-            throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
+            throw new IllegalArgumentException(String.valueOf(new ErrorResponse(400, "request_id not found in database")));
         }
     }
 
@@ -76,23 +78,17 @@ public class SmsService {
             throw new ValidationException(new ErrorResponse(400, "provide appropriate request id"));
         }
         SmsEntity result;
-        if (!smsDao.existsById(id)) {
-            log.error("wrong request id " + id + ": provided id is not found in database");
-            throw new ValidationException( new ErrorResponse(400, "request_id not found in database"));
-        } else {
+        if (smsDao.existsById(id)) {
             result = smsDao.findById(id).orElse(null);
             smsDao.deleteById(id);
             return new CustomResponse<>(result,null,null);
+        } else {
+            log.error("wrong request id " + id + ": provided id is not found in database");
+            throw new RuntimeException(String.valueOf(new ErrorResponse(400, "request_id not found in database")));
         }
     }
 
     public SmsEntity setDetails(SmsEntity smsEntity){
-        if(blacklistService.isBlacklisted(smsEntity.getPhoneNumber())){
-            smsEntity.setStatus("BAD_REQUEST");
-            smsEntity.setFailureCode("400");
-            smsEntity.setFailureComments("the number is blacklisted");
-        }
-        else smsEntity.setStatus("Pending");
 
         smsEntity.setCreatedAt(LocalDateTime.now());
         smsEntity.setUpdatedAt(LocalDateTime.now());
@@ -103,24 +99,31 @@ public class SmsService {
         return smsEntity;
     }
 
-    public CustomResponse<SMSResponse,String, PageDetails> addSms(SmsEntity smsEntity) throws ValidationException{
+    public CustomResponse<SMSResponse,String, PageDetails> addSms(SmsEntity smsEntity) {
         if(SmsRequestValidator.isInvalidPhoneNumber(smsEntity.getPhoneNumber())){
             log.error("wrong input format : phone_number validation failed");
             throw new ValidationException(new ErrorResponse(400, "please check phone number"));
         }
         SmsEntity savedSmsEntity;
         try {
-            savedSmsEntity = smsDao.save(setDetails(smsEntity));
+            if(blacklistService.isBlacklisted(smsEntity.getPhoneNumber())){
+                smsEntity.setStatus("BAD_REQUEST");
+                smsEntity.setFailureCode("400");
+                smsEntity.setFailureComments("the number is blacklisted");
+            }
+            else smsEntity.setStatus("Pending");
+            smsEntity = setDetails(smsEntity);
+            savedSmsEntity = smsDao.save(smsEntity);
         }
         catch (Exception e) {
-            log.debug("smsRequestRepository gave error while creating new record: check mysql database errors");
-            throw new ValidationException("smsRequestRepository gave error while creating new record: check mysql database errors");
+            log.debug("smsDao gave error while saving new record: check mysql database errors");
+            throw new RuntimeException("smsDao gave error while saving new record: check mysql database errors");
         }
         try{
-            messageProducer.sendMessage("send_sms",String.valueOf(savedSmsEntity.getId()));
+            messageProducer.sendMessage(kafkaTopic,String.valueOf(savedSmsEntity.getId()));
         }catch (Exception e){
             log.debug("messageProducer cant produce messageId: check for kafka");
-            throw new ValidationException("messageProducer cant produce Id for the message : check for kafka");
+            throw new RuntimeException("messageProducer cant produce Id for the message : check for kafka");
         }
         ESEntity es = SMSRequestToESEntityTransformer.transformer(savedSmsEntity);
         try {
@@ -128,52 +131,19 @@ public class SmsService {
             log.info(String.valueOf(es));
         } catch (Exception e) {
             log.error(String.valueOf(e));
-            log.error("ESRepository : save() call threw error");
-            throw new ValidationException("ESRepository : save() call threw error");
+            log.error("ESDao : save() call threw error");
+            throw new RuntimeException("ESDao : save() call threw error");
         }
 
         return new CustomResponse<>(new SMSResponse(savedSmsEntity.getId(), "Pending"),null,null);
     }
-
-//    Elasticsearch Services
-//    public void save(SMSEntity smsEntity) throws ValidationException {
-//        if (SmsRequestValidator.isInvalidPhoneNumber(smsEntity.getPhoneNumber())) {
-//            log.error("Phone number not in valid format");
-//            throw new ValidationException("Please enter valid phone number");
-//        } else {
-//            SMSEntity result;
-//            try {
-//                result = smsDao.save(setDetails(smsEntity));
-//            }catch (Exception e){
-//                log.error(String.valueOf(e));
-//                log.error("SMSRequestRepository : save() call threw error");
-//                throw new ValidationException("SMSRequestRepository : save() call threw error");
-//            }
-//            try{
-//                messageProducer.sendMessage("send_sms",String.valueOf(result.getId()));
-//            }catch (Exception e){
-//                log.debug("messageProducer cant produce messageId: check for kafka");
-//                throw new ValidationException("messageProducer cant produce Id for the message : check for kafka");
-//            }
-//            ESEntity es = SMSRequestToESEntityTransformer.transformer(result);
-//            try {
-//                esDao.save(es);
-//                log.info(String.valueOf(es));
-////                System.out.println(esRepository.findAll());
-//            } catch (Exception e) {
-//                log.error(String.valueOf(e));
-//                log.error("ESRepository : save() call threw error");
-//                throw new ValidationException("ESRepository : save() call threw error");
-//            }
-//        }
-//    }
 
     public CustomResponse<List<ESEntity>,String, PageDetails> findByPhoneNumberAndTimeRange(ESTimeRangeRequest esTimeRangeRequest) throws ValidationException {
         if(SmsRequestValidator.isInvalidPhoneNumber(esTimeRangeRequest.getPhoneNumber())){
             log.error("Invalid phone number entered");
             throw new ValidationException((new ErrorResponse(400,"Invalid phone number entered")));
         }
-        if(TimeValidator.checkTimings(esTimeRangeRequest)){
+        if(TimeValidator.checkEndTimeIsBeforeStartTime(esTimeRangeRequest)){
             log.error("endTime is before the startTime");
             throw new ValidationException("endTime is before the startTime");
         }
@@ -190,8 +160,8 @@ public class SmsService {
             return new CustomResponse<>(result.getContent(), null, new PageDetails(result.getNumber(), result.getSize()));
         } catch (Exception e) {
             log.error(String.valueOf(e));
-            log.error("ESRepository : findByPhoneNumberAndCreatedAtBetweenOrderByCreatedAtDesc() call threw error");
-            throw new ValidationException("ESRepository : findByPhoneNumberAndCreatedAtBetweenOrderByCreatedAtDesc() call threw error");
+            log.error("ESDao : findByPhoneNumberAndCreatedAtBetweenOrderByCreatedAtDesc() call threw error");
+            throw new ValidationException("ESDao : findByPhoneNumberAndCreatedAtBetweenOrderByCreatedAtDesc() call threw error");
         }
 
     }
@@ -207,8 +177,8 @@ public class SmsService {
             return new CustomResponse<>(result.getContent(),null,new PageDetails(result.getNumber(), result.getSize()));
         }catch (Exception e){
             log.error(String.valueOf(e));
-            log.error("ESRepository : findByMessageContaining() call threw error");
-            throw new ValidationException("ESRepository : findByMessageContaining() call threw error");
+            log.error("ESDao : findByMessageContaining() call threw error");
+            throw new ValidationException("ESDao : findByMessageContaining() call threw error");
         }
     }
 
@@ -219,8 +189,8 @@ public class SmsService {
             return new CustomResponse<>(result.getContent(), null, new PageDetails(result.getNumber(), result.getSize()));
         } catch (Exception e) {
             log.error(String.valueOf(e));
-            log.error("ESRepository : findAll() call threw error");
-            throw new ValidationException("ESRepository : findAll() call threw error");
+            log.error("ESDao : findAll() call threw error");
+            throw new ValidationException("ESDao : findAll() call threw error");
         }
     }
 }

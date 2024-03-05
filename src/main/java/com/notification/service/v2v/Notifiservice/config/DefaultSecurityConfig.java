@@ -30,37 +30,10 @@ public class DefaultSecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/v1/**").hasRole("ADMIN")
         );
 
-        // use HTTP Basic authentication
         http.httpBasic(Customizer.withDefaults());
 
-        // disable Cross Site Request Forgery (CSRF)
-        // in general, not required for stateless REST APIs that use POST, PUT, DELETE and/or PATCH
         http.csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
     }
-
-//    @Bean
-//    public InMemoryUserDetailsManager userDetailsManager() {
-//
-//        UserDetails john = User.builder()
-//                .username("user")
-//                .password("{noop}test123")
-//                .roles("USER")
-//                .build();
-//
-//        UserDetails mary = User.builder()
-//                .username("editor")
-//                .password("{noop}test123")
-//                .roles("USER", "EDITOR")
-//                .build();
-//
-//        UserDetails susan = User.builder()
-//                .username("admin")
-//                .password("{noop}test123")
-//                .roles("USER", "EDITOR", "ADMIN")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(john, mary, susan);
-//    }
 }

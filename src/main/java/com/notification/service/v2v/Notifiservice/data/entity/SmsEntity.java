@@ -30,5 +30,17 @@ public class SmsEntity {
         this.message = message;
     }
 
-
+    @Override
+    public String toString() {
+        return "SmsEntity{" +
+                "id=" + id +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", message='" + message + '\'' +
+                ", status='" + status + '\'' +
+                ", failureCode='" + failureCode + '\'' +
+                ", failureComments='" + failureComments + '\'' +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
 }
